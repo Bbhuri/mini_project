@@ -32,6 +32,20 @@ def initializeCourses_db():
     conn.commit()
     conn.close()
 
+def initializeEnrollments_db():
+    os.makedirs("data", exist_ok=True)
+    conn = get_connection(config.DB_PATH_ENROLLMENTS)
+    cursor = conn.cursor()
+    cursor.execute("""CREATE TABLE IF NOT EXISTS enrollments (
+        student_id INTEGER,
+        course_id INTEGER,
+        FOREIGN KEY(student_id) REFERENCES students(id),
+        FOREIGN KEY(course_id) REFERENCES courses(id),
+        PRIMARY KEY (student_id, course_id)
+        )""")
+    conn.commit()
+    conn.close()
+
 def initializeAssessments_db():
     os.makedirs("data", exist_ok=True)
     conn = get_connection(config.DB_PATH_ASSESSMENTS)
@@ -39,8 +53,7 @@ def initializeAssessments_db():
     cursor.execute("""CREATE TABLE IF NOT EXISTS assessments (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         title TEXT NOT NULL,
-        course_id INTEGER NOT NULL,
-        course_name TEXT NOT NULL,
+        course_id INTEGER,
         max_score REAL,
         FOREIGN KEY(course_id) REFERENCES courses(id)
         )""")
