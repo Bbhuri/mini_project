@@ -2,12 +2,12 @@ import sqlite3
 import os
 import config
 
-def get_connection(db_path):
-    return sqlite3.connect(db_path)
+def get_connection():
+    return sqlite3.connect(config.DB_PATH)
 
 def initializeStudents_db():
     os.makedirs("data", exist_ok=True)
-    conn = get_connection(config.DB_PATH_STUDENTS)
+    conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""CREATE TABLE IF NOT EXISTS students (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -20,7 +20,7 @@ def initializeStudents_db():
 
 def initializeCourses_db():
     os.makedirs("data", exist_ok=True)
-    conn = get_connection(config.DB_PATH_COURSES)
+    conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""CREATE TABLE IF NOT EXISTS courses (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -34,7 +34,7 @@ def initializeCourses_db():
 
 def initializeEnrollments_db():
     os.makedirs("data", exist_ok=True)
-    conn = get_connection(config.DB_PATH_ENROLLMENTS)
+    conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""CREATE TABLE IF NOT EXISTS enrollments (
         student_id INTEGER,
@@ -48,7 +48,7 @@ def initializeEnrollments_db():
 
 def initializeAssessments_db():
     os.makedirs("data", exist_ok=True)
-    conn = get_connection(config.DB_PATH_ASSESSMENTS)
+    conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""CREATE TABLE IF NOT EXISTS assessments (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -62,7 +62,7 @@ def initializeAssessments_db():
 
 def initializeGrade_db():
     os.makedirs("data", exist_ok=True)
-    conn = get_connection(config.DB_PATH_GRADE)
+    conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("""CREATE TABLE IF NOT EXISTS grade (
         id INTEGER PRIMARY KEY AUTOINCREMENT,

@@ -2,7 +2,8 @@ import tkinter as tk
 from tkinter import messagebox, ttk
 from models import (
     create_student, read_students, read_student_by_id, update_student, delete_student,
-    create_course,read_courses, read_course_by_id, update_course, delete_course
+    create_course,read_courses, read_course_by_id, update_course, delete_course,
+    read_grades_for_course,add_student_to_course,find_enrolled_students
 )
 
 def create_table_frame(root, title_text):
@@ -181,9 +182,114 @@ def start_gui():
     load_courses(course_table)
     notebook.add(course_frame, text="วิชา")
 
+    # Add double-click binding to course table
+    course_table.bind('<Double-1>', lambda event: open_grade_window(event, course_table))
+
     # Grade Tab (placeholder)
     grade_frame = tk.Frame(root)
     tk.Label(grade_frame, text="ตารางเกรด", font=('Angsana New', 30, 'bold')).pack(pady=10)
-    notebook.add(grade_frame, text="เกรด")
-
     root.mainloop()
+
+def open_grade_window(event, course_table):
+    #if already open toplevel window
+    if any(isinstance(w, tk.Toplevel) and w.winfo_name() == "grade_modal" for w in course_table.winfo_children()):
+        return
+
+    selected_item = course_table.selection()
+    if not selected_item:
+        return
+    course = read_course_by_id(selected_item[0])
+
+    grade_modal = tk.Toplevel()
+    grade_modal.title(f"ตารางคะแนนสำหรับวิชา: {course[1]} {course[2]}")
+    grade_modal.geometry("800x600")  # Increased size for table
+    grade_modal.grab_set()
+
+    # Display course header info (assuming course order: course_id, course_name, teacher, description)
+    header_frame = tk.Frame(grade_modal)
+    header_frame.pack(fill='x', padx=10, pady=10)
+
+    tk.Label(header_frame, text=f"รหัสวิชา: {course[1]}", font=("Arial", 12, "bold")).pack(anchor='w')
+    add_student_button = tk.Button(header_frame, text="เพิ่มนักศึกษา", command=lambda: add_student_to_class_modal(course_table), width=18, height=2)
+    add_student_button.pack(side='right', padx=10)
+    tk.Label(header_frame, text=f"ชื่อวิชา: {course[2]}", font=("Arial", 12)).pack(anchor='w')
+    tk.Label(header_frame, text=f"ผู้สอน: {course[3]}", font=("Arial", 12)).pack(anchor='w')
+    tk.Label(header_frame, text=f"รายละเอียด: {course[4]}", font=("Arial", 12), wraplength=780, justify="left").pack(anchor='w')
+
+    # Add a Treeview for grades directly in the modal
+    grade_table = ttk.Treeview(grade_modal, show='headings')
+    grade_table.pack(expand=True, fill='both', padx=10, pady=10)
+
+    # Define columns for the grade table
+    grade_table['columns'] = ("ข้อมูลนักศึกษา", "Assessment", "Grade")
+    for col in grade_table['columns']:
+        grade_table.heading(col, text=col)
+        grade_table.column(col, anchor="center")
+
+    # Load grade data
+    student_rows = read_grades_for_course(course[0])
+    print(student_rows)
+    for row in student_rows:
+        student_info = f"{row[0]} - {row[1]}"
+        grade_table.insert('', tk.END, values=(student_info, row[2], row[3]))
+
+def add_student_to_class_modal(course_table):
+    selected_course = course_table.selection()
+    print('Selected Course:', {selected_course})  # Debugging print statement to check the selected_course value
+    if not selected_course:
+        messagebox.showwarning("Warning", "Please select a course first")
+        return
+    
+    course_id = int(selected_course[0])
+    modal = tk.Toplevel()
+    modal.title("เพิ่มนักศึกษาเข้ารายวิชา")
+    modal.geometry("500x400")
+    modal.grab_set()
+
+    # Get all students and filter out those already in the course
+    all_students = read_students()
+    enrolled_students = find_enrolled_students(course_id)
+    enrolled_ids = {row[0] for row in enrolled_students}
+    available_students = [student for student in all_students if student[0] not in enrolled_ids]
+
+    if not available_students:
+        tk.Label(modal, text="No students available to add").pack(pady=20)
+        return
+    # Create listbox with scrollbar
+    list_frame = tk.Frame(modal)
+    list_frame.pack(fill='both', expand=True, padx=10, pady=10)
+    
+    scrollbar = tk.Scrollbar(list_frame)
+    scrollbar.pack(side='right', fill='y')
+
+    student_list = tk.Listbox(list_frame, selectmode='multiple', 
+                             yscrollcommand=scrollbar.set)
+    student_list.pack(fill='both', expand=True)
+    
+    scrollbar.config(command=student_list.yview)
+
+    # Populate listbox
+    for student in available_students:
+        student_list.insert('end', f"{student[1]} ({student[2]}) - {student[3]}")
+
+    def on_add():
+        selected_indices = student_list.curselection()
+        if not selected_indices:
+            messagebox.showwarning("Warning", "Please select at least one student")
+            return
+        
+        # Get the actual student IDs from the selected indices
+        selected_students = [available_students[i][0] for i in selected_indices]
+        
+        # TODO: Add function to models.py to handle adding students to course
+        for student_id in selected_students:
+            add_student_to_course(student_id, course_id)
+        read_grades_for_course(course_id)
+        messagebox.showinfo("Success", "Students added to course")
+        modal.destroy()
+
+    button_frame = tk.Frame(modal)
+    button_frame.pack(pady=10)
+    
+    tk.Button(button_frame, text="Add Selected", command=on_add).pack(side='left', padx=5)
+    tk.Button(button_frame, text="Cancel", command=modal.destroy).pack(side='left', padx=5)

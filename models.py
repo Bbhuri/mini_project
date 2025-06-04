@@ -1,9 +1,10 @@
 from db import get_connection
 import config
+import os
 import sqlite3
 
 def create_student(student_id, student_name, branch):
-    conn = get_connection(config.DB_PATH_STUDENTS)
+    conn = get_connection()
     cursor = conn.cursor()
     try:
         command = "INSERT INTO students(student_id, student_name, branch) VALUES (?, ?, ?)"
@@ -15,7 +16,7 @@ def create_student(student_id, student_name, branch):
         conn.close()
 
 def read_students():
-    conn = get_connection(config.DB_PATH_STUDENTS)
+    conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM students")
     users = cursor.fetchall()
@@ -23,7 +24,7 @@ def read_students():
     return users
 
 def read_student_by_id(user_id):
-    conn = get_connection(config.DB_PATH_STUDENTS)
+    conn = get_connection()
     cursor = conn.cursor()
     command="SELECT * FROM students WHERE id =?"
     cursor.execute(command, (user_id,))
@@ -32,7 +33,7 @@ def read_student_by_id(user_id):
     return user
 
 def update_student(id,student_id, student_name, branch):
-    conn = get_connection(config.DB_PATH_STUDENTS)
+    conn = get_connection()
     cursor = conn.cursor()
     try:
         command="UPDATE students SET student_id = ?, student_name = ?, branch = ? WHERE id = ?"
@@ -44,7 +45,7 @@ def update_student(id,student_id, student_name, branch):
         conn.close()
 
 def delete_student(user_id):
-    conn = get_connection(config.DB_PATH_STUDENTS)
+    conn = get_connection()
     cursor = conn.cursor()
     command="DELETE FROM students WHERE id = ?"
     cursor.execute(command, (user_id,))
@@ -53,7 +54,7 @@ def delete_student(user_id):
     return
 
 def create_course(course_id,course_name,teacher,description):
-    conn = get_connection(config.DB_PATH_COURSES)
+    conn = get_connection()
     cursor = conn.cursor()
     try:
         command = "INSERT INTO courses(course_id, course_name, teacher,description) VALUES (?, ?, ?, ?)"
@@ -65,7 +66,7 @@ def create_course(course_id,course_name,teacher,description):
         conn.close()
 
 def read_courses():
-    conn = get_connection(config.DB_PATH_COURSES)
+    conn = get_connection()
     cursor = conn.cursor()
     cursor.execute("SELECT * FROM courses")
     courses = cursor.fetchall()
@@ -73,7 +74,7 @@ def read_courses():
     return courses
 
 def read_course_by_id(id):
-    conn = get_connection(config.DB_PATH_COURSES)
+    conn = get_connection()
     cursor = conn.cursor()
     command="SELECT * FROM courses WHERE id =?"
     cursor.execute(command, (id,))
@@ -82,7 +83,7 @@ def read_course_by_id(id):
     return course
 
 def update_course(id,course_id, course_name, teacher, description):
-    conn = get_connection(config.DB_PATH_COURSES)
+    conn = get_connection()
     cursor = conn.cursor()
     try:
         command="UPDATE courses SET course_id = ?, course_name = ?, teacher = ?, description = ? WHERE id = ?"
@@ -93,11 +94,64 @@ def update_course(id,course_id, course_name, teacher, description):
     finally:
         conn.close()
 
+def add_student_to_course(student_id, course_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    try:
+        command = "INSERT INTO enrollments(student_id, course_id) VALUES (?,?)"
+        cursor.execute(command, (student_id, course_id))
+        conn.commit()
+    except sqlite3.IntegrityError:
+        raise ValueError("Student is already enrolled in this course")
+    finally:
+        conn.close()
+
+def remove_student_from_course(student_id, course_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    command="DELETE FROM enrollments WHERE student_id =? AND course_id =?"
+    cursor.execute(command, (student_id, course_id))
+    conn.commit()
+    conn.close()
+    return
+
+def read_enrollments():
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT * FROM enrollments")
+    enrollments = cursor.fetchall()
+    conn.close()
+    return enrollments
+
+def find_enrolled_students(course_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    command="SELECT student_id FROM enrollments WHERE course_id =?"
+    cursor.execute(command, (course_id,))
+    enrolled_students = cursor.fetchall()
+    conn.close()
+    return enrolled_students
+
 def delete_course(id):
-    conn = get_connection(config.DB_PATH_COURSES)
+    conn = get_connection()
     cursor = conn.cursor()
     command="DELETE FROM courses WHERE id = ?"
     cursor.execute(command, (id,))
     conn.commit()
     conn.close()
     return
+
+def read_grades_for_course(course_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    command = """
+        SELECT s.student_id, s.student_name
+        FROM students s
+        JOIN enrollments e ON s.id = e.student_id
+        WHERE e.course_id = ?
+    """
+    cursor.execute(command, (course_id,))
+    student_rows = cursor.fetchall()
+    conn.close()
+    return student_rows
+
