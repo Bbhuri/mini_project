@@ -34,10 +34,14 @@ def read_student_by_id(user_id):
 def update_student(id,student_id, student_name, branch):
     conn = get_connection(config.DB_PATH_STUDENTS)
     cursor = conn.cursor()
-    command="UPDATE students SET student_id = ?, student_name = ?, branch = ? WHERE id = ?"
-    cursor.execute(command, (student_id,student_name, branch, id))
-    conn.commit()
-    conn.close()
+    try:
+        command="UPDATE students SET student_id = ?, student_name = ?, branch = ? WHERE id = ?"
+        cursor.execute(command, (student_id,student_name, branch, id))
+        conn.commit()
+    except sqlite3.IntegrityError:
+        raise ValueError("Student ID already exists")
+    finally:
+        conn.close()
 
 def delete_student(user_id):
     conn = get_connection(config.DB_PATH_STUDENTS)
@@ -51,10 +55,14 @@ def delete_student(user_id):
 def create_course(course_id,course_name,teacher,description):
     conn = get_connection(config.DB_PATH_COURSES)
     cursor = conn.cursor()
-    command = "INSERT INTO courses(student_id, student_name, branch) VALUES (?, ?, ?,?)"
-    cursor.execute(command, (course_id, course_name, teacher,description))
-    conn.commit()
-    conn.close()
+    try:
+        command = "INSERT INTO courses(course_id, course_name, teacher,description) VALUES (?, ?, ?, ?)"
+        cursor.execute(command, (course_id, course_name, teacher,description))
+        conn.commit()
+    except sqlite3.IntegrityError:
+        raise ValueError("Course ID already exists")
+    finally:
+        conn.close()
 
 def read_courses():
     conn = get_connection(config.DB_PATH_COURSES)
@@ -76,10 +84,14 @@ def read_course_by_id(id):
 def update_course(id,course_id, course_name, teacher, description):
     conn = get_connection(config.DB_PATH_COURSES)
     cursor = conn.cursor()
-    command="UPDATE courses SET course_id = ?, course_name = ?, teacher = ?, description = ? WHERE id = ?"
-    cursor.execute(command, (course_id,course_name, teacher , description, id,))
-    conn.commit()
-    conn.close()
+    try:
+        command="UPDATE courses SET course_id = ?, course_name = ?, teacher = ?, description = ? WHERE id = ?"
+        cursor.execute(command, (course_id,course_name, teacher , description, id,))
+        conn.commit()
+    except sqlite3.IntegrityError:
+        raise ValueError("Course ID already exists")
+    finally:
+        conn.close()
 
 def delete_course(id):
     conn = get_connection(config.DB_PATH_COURSES)
