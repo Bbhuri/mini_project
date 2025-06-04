@@ -1,6 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox
-from models import create_student, read_students,read_student_by_id, update_student, delete_student
+from models import create_student, read_students,read_student_by_id, update_student, delete_student, read_courses, read_course_by_id, update_course, delete_course
 from tkinter import ttk
 
 def add_user(student_id_entry,name_entry, branch_entry):
@@ -106,17 +106,53 @@ def delete_selected_student(table):
 
 def start_gui():
     root = tk.Tk()
-    root.title("Students Manager")
+    root.title("Class Manager")
 
-    columns = ("รหัสนักศึกษา", "ชื่อ", "สาขา")
-    table = ttk.Treeview(root, columns=columns, show='headings')
+    # Create menu bar
+    menubar = tk.Menu(root)
+    root.config(menu=menubar)
 
-    for col in columns:
+    main_menu = tk.Menu(menubar, tearoff=0)
+    menubar.add_cascade(label="Menu", menu=main_menu)
+
+    # Create tables submenu
+    tables_menu = tk.Menu(main_menu, tearoff=0)
+    main_menu.add_cascade(label="Tables", menu=tables_menu)
+    tables_menu.add_command(label="Students", command=lambda: show_students_menu(root, table))
+    tables_menu.add_command(label="Courses", command=lambda: show_courses_menu(root, table))
+    tables_menu.add_command(label="Grade", command=lambda: show_grades_menu(root, table))
+
+    # Main table setup
+
+
+    L = Label(frame,text='ตารางรายชื่อนักศึกษา',font=('Angsana New',30,'bold'))
+    L.pack(pady=10)
+
+    L = Label(frame,text='ตารางรายรายวิชา',font=('Angsana New',30,'bold'))
+    L.pack(pady=10)
+
+    L = Label(frame,text='ตารางเกรด',font=('Angsana New',30,'bold'))
+    L.pack(pady=10)
+    
+
+    table_frame = tk.Frame(root)
+    table_frame.pack(expand=True, fill='both', padx=10, pady=10)
+
+    # Initialize table with default columns
+    table = ttk.Treeview(table_frame, columns=("รหัสนักศึกษา", "ชื่อ", "สาขา"), show='headings')
+    table.pack(expand=True, fill='both')
+    
+    # Set up table columns and headings
+    for col in table['columns']:
         table.heading(col, text=col)
         table.column(col, anchor="center")
 
-    table.pack(expand=True, fill='both')
+    # Add menu items (now table is properly initialized)
+    tables_menu.add_command(label="Students", command=lambda: show_students_table(root, table))
+    tables_menu.add_command(label="Courses", command=lambda: show_courses_table(root, table))
+    tables_menu.add_command(label="Grade", command=lambda: show_teachers_table(root, table))
 
+    # Event bindings and buttons
     def on_row_select(event):
         item_id = table.identify_row(event.y)
         if item_id:
@@ -125,19 +161,39 @@ def start_gui():
 
     table.bind('<ButtonRelease-1>', on_row_select)
 
-    button_frame = tk.Frame(root)
-    button_frame.pack(pady=10)
-
-    edit_button = tk.Button(button_frame, text="แก้ไขผู้ใช้", command=lambda: edit_selected_student(table))
-    edit_button.pack(side="left", padx=5)
-
-    delete_button = tk.Button(button_frame, text="ลบผู้ใช้", command=lambda: delete_selected_student(table))
-    delete_button.pack(side="left", padx=5)
-
-    add_user_button = tk.Button(root, text="เพิ่มผู้ใช้", command=lambda: open_add_user_modal(table,0))
-    add_user_button.pack(pady=10)
-
-    # Load data
+    # Load initial data
     load_students(table)
 
     root.mainloop()
+
+def show_students_menu(root, table):
+    # Clear existing table
+    for item in table.get_children():
+        table.delete(item)
+    
+    # Set student columns
+    table['columns'] = ("รหัสนักศึกษา", "ชื่อ", "สาขา")
+    for col in table['columns']:
+        table.heading(col, text=col)
+    
+    # Load student data
+    students = read_students()
+    for row in students:
+        table.insert('', tk.END, values=row[1:], iid=row[0])
+
+def show_courses_table(root, table):
+    # Clear existing table
+    for item in table.get_children():
+        table.delete(item)
+    
+    # Set course columns
+    table['columns'] = ("รหัสวิชา", "ชื่อวิชา","อาจารย์ผู้สอน", "หมายเหตุ")
+    for col in table['columns']:
+        table.heading(col, text=col)
+    courses = read_courses()
+    for row in courses:
+        table.insert('', tk.END, values=row[1:], iid=row[0])
+
+def show_teachers_table(root, table):
+    # Similar implementation for teachers
+    pass
