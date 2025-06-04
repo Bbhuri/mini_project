@@ -155,3 +155,65 @@ def read_grades_for_course(course_id):
     conn.close()
     return student_rows
 
+def get_assessments_for_course(course_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    command = """
+        SELECT a.id, a.title, a.max_score
+        FROM assessments a
+        JOIN courses c ON a.course_id = c.id
+        WHERE c.id =?
+    """
+    cursor.execute(command, (course_id,))
+    assessment_rows = cursor.fetchall()
+    conn.close()
+    return assessment_rows
+
+def insert_assessment(title, course_id, max_score):
+    conn = get_connection()
+    cursor = conn.cursor()
+    command = "INSERT INTO assessments (title, course_id, max_score) VALUES (?, ?, ?)"
+    cursor.execute(command, (title, course_id, max_score))
+    conn.commit()
+    conn.close()
+
+def update_assessment(assessment_id, title, max_score):
+    conn = get_connection()
+    cursor = conn.cursor()
+    command = "UPDATE assessments SET title=?, max_score=? WHERE id=?"
+    cursor.execute(command, (title,  max_score, assessment_id))
+    conn.commit()
+    conn.close()
+
+def delete_assessment(assessment_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    command = "DELETE FROM assessments WHERE id=?"
+    cursor.execute(command, (assessment_id,))
+    conn.commit()
+    conn.close()
+
+def get_assessment_by_id(assessment_id):
+    conn = get_connection()
+    cursor = conn.cursor()
+    command = "SELECT * FROM assessments WHERE id=?"
+    cursor.execute(command, (assessment_id,))
+    assessment = cursor.fetchone()
+    conn.close()
+    return assessment
+
+def insert_grade(student_id, assessment_id, score):
+    conn = get_connection()
+    cursor = conn.cursor()
+    command = "INSERT INTO grade (student_id, assessment_id, score) VALUES (?, ?, ?)"
+    cursor.execute(command, (student_id, assessment_id, score))
+    conn.commit()
+    conn.close()
+
+def update_grade(grade_id, score):
+    conn = get_connection()
+    cursor = conn.cursor()
+    command = "UPDATE grade SET score=? WHERE id=?"
+    cursor.execute(command, (score, grade_id))
+    conn.commit()
+    conn.close()
