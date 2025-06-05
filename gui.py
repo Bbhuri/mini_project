@@ -1,9 +1,9 @@
 import tkinter as tk
 from tkinter import messagebox, ttk
 from models import (
-    create_student, read_students, read_student_by_id, update_student, delete_student,
-    create_course,read_courses, read_course_by_id, update_course, delete_course,
-    read_grades_for_course,add_student_to_course,find_enrolled_students
+    create_branch, read_branches, update_branch, delete_branch, read_branch_by_id,
+    create_project, read_projects, update_project, delete_project, read_project_by_id,
+    create_student, read_students, update_student, delete_student, read_student_by_id
 )
 
 def create_table_frame(root, title_text):
@@ -13,121 +13,54 @@ def create_table_frame(root, title_text):
     table.pack(expand=True, fill='both', padx=10, pady=10)
     return frame, table
 
-def load_students(table):
+def load_data(table, reader):
     table.delete(*table.get_children())
-    students = read_students()
-    for row in students:
+    for row in reader():
         table.insert('', tk.END, values=row[1:], iid=row[0])
 
-def load_courses(table):
-    table.delete(*table.get_children())
-    courses = read_courses()
-    for row in courses:
-        table.insert('', tk.END, values=row[1:], iid=row[0])
-
-def open_student_modal(table, student_id=0):
+def open_modal(table, entity_name, field_names, entry_getters, reader_by_id, updater, creator, loader, entity_id=0):
     modal = tk.Toplevel()
-    modal.title("แก้ไขผู้ใช้" if student_id else "เพิ่มผู้ใช้")
-    modal.geometry("300x200")
+    modal.title(f"แก้ไข{entity_name}" if entity_id else f"เพิ่ม{entity_name}")
+    modal.geometry("400x300")
     modal.grab_set()
 
-    sid_entry = tk.Entry(modal)
-    name_entry = tk.Entry(modal)
-    branch_entry = tk.Entry(modal)
+    entries = [tk.Entry(modal) for _ in field_names]
 
-    if student_id:
-        student = read_student_by_id(student_id)
-        if student:
-            sid_entry.insert(0, student[1])
-            name_entry.insert(0, student[2])
-            branch_entry.insert(0, student[3])
+    if entity_id:
+        data = reader_by_id(entity_id)
+        if data:
+            for entry, value in zip(entries, data[1:len(field_names)+1]):
+                entry.insert(0, value)
         else:
-            messagebox.showerror("Error", f"Student ID {student_id} not found")
+            messagebox.showerror("Error", f"{entity_name} ID {entity_id} not found")
             modal.destroy()
             return
 
-    labels = ["รหัสนักศึกษา", "ชื่อ", "สาขา"]
-    entries = [sid_entry, name_entry, branch_entry]
-    for i, (label, entry) in enumerate(zip(labels, entries)):
+    for i, (label, entry) in enumerate(zip(field_names, entries)):
         tk.Label(modal, text=label).grid(row=i, column=0, padx=10, pady=5, sticky='e')
         entry.grid(row=i, column=1, pady=5)
 
     def on_save():
         try:
-            sid = int(sid_entry.get())
-            name = name_entry.get()
-            branch = branch_entry.get()
-            if not all([sid, name, branch]):
-                raise ValueError("กรุณากรอกข้อมูลให้ครบทุกช่อง")
-            if student_id:
-                update_student(student_id, sid, name, branch)
+            values = [getter(entry.get()) for getter, entry in zip(entry_getters, entries)]
+            if not all(values):
+                raise ValueError("กรุณากรอกข้อมูลให้ครบถ้วน")
+            if entity_id:
+                updater(entity_id, *values)
             else:
-                create_student(sid, name, branch)
-            load_students(table)
+                creator(*values)
+            loader(table)
             messagebox.showinfo("Success", "บันทึกข้อมูลสำเร็จ!")
             modal.destroy()
         except ValueError as e:
             messagebox.showerror("Error", str(e))
         except Exception as e:
+            print(e)
             messagebox.showerror("Error", f"เกิดข้อผิดพลาด: {str(e)}")
             modal.destroy()
 
-    tk.Button(modal, text="บันทึก", command=on_save, width=10).grid(row=3, column=0, pady=10)
-    tk.Button(modal, text="ยกเลิก", command=lambda: [modal.destroy(), table.focus_remove()], width=10).grid(row=3, column=1)
-
-def open_course_modal(table, course_id=0):
-    modal = tk.Toplevel()
-    modal.title("แก้ไขวิชา" if course_id else "เพิ่มวิชา")
-    modal.geometry("350x250")
-    modal.grab_set()
-
-    course_id_entry = tk.Entry(modal)
-    course_name_entry = tk.Entry(modal)
-    teacher_entry = tk.Entry(modal)
-    description_entry = tk.Entry(modal)
-
-    if course_id:
-        course = read_course_by_id(course_id)
-        if course:
-            course_id_entry.insert(0, course[1])
-            course_name_entry.insert(0, course[2])
-            teacher_entry.insert(0, course[3])
-            description_entry.insert(0, course[4])
-        else:
-            messagebox.showerror("Error", f"Course ID {course_id} not found")
-            modal.destroy()
-            return
-
-    labels = ["รหัสวิชา", "ชื่อวิชา", "อาจารย์ผู้สอน", "หมายเหตุ"]
-    entries = [course_id_entry, course_name_entry, teacher_entry, description_entry]
-    for i, (label, entry) in enumerate(zip(labels, entries)):
-        tk.Label(modal, text=label).grid(row=i, column=0, padx=10, pady=5, sticky='e')
-        entry.grid(row=i, column=1, pady=5)
-
-    def on_save():
-        try:
-            cid = course_id_entry.get()
-            cname = course_name_entry.get()
-            teacher = teacher_entry.get()
-            desc = description_entry.get()
-            if not all([cid, cname, teacher]):
-                raise ValueError("กรุณากรอกข้อมูล รหัสวิชา, ชื่อวิชา, และอาจารย์ผู้สอน ให้ครบ")
-            if course_id:
-                update_course(course_id, cid, cname, teacher, desc)
-            else:
-                create_course(cid, cname, teacher, desc)
-            load_courses(table)
-            messagebox.showinfo("Success", "บันทึกข้อมูลสำเร็จ!")
-            modal.destroy()
-        except ValueError as e:
-            messagebox.showerror("Error", str(e))
-        except Exception as e:
-            messagebox.showerror("Error", f"เกิดข้อผิดพลาด: {str(e)}")
-            modal.destroy()
-
-    tk.Button(modal, text="บันทึก", command=on_save, width=10).grid(row=4, column=0, pady=10)
-    tk.Button(modal, text="ยกเลิก", command=lambda: [modal.destroy(), table.focus_remove()], width=10).grid(row=4, column=1)
-
+    tk.Button(modal, text="บันทึก", command=on_save, width=10).grid(row=len(field_names), column=0, pady=10)
+    tk.Button(modal, text="ยกเลิก", command=modal.destroy, width=10).grid(row=len(field_names), column=1)
 
 def delete_selected(table, delete_fn):
     selected = table.selection()
@@ -151,145 +84,62 @@ def start_gui():
     notebook = ttk.Notebook(root)
     notebook.pack(fill='both', expand=True)
 
+    # Branch Tab
+    branch_frame, branch_table = create_table_frame(root, 'ตารางสาขา')
+    branch_table['columns'] = ("รหัสสาขา", "ชื่อสาขา", "หมายเหตุ")
+    for col in branch_table['columns']:
+        branch_table.heading(col, text=col)
+        branch_table.column(col, anchor='center')
+    build_crud_buttons(
+        branch_frame,
+        lambda: open_modal(branch_table, "สาขา", ["รหัสสาขา", "ชื่อสาขา", "หมายเหตุ"], [str, str, str],
+                           read_branch_by_id, update_branch, create_branch,
+                           lambda table: load_data(table, read_branches)),
+        lambda: open_modal(branch_table, "สาขา", ["รหัสสาขา", "ชื่อสาขา", "หมายเหตุ"], [str, str, str],
+                           read_branch_by_id, update_branch, create_branch, 
+                           lambda table: load_data(table, read_branches), int(branch_table.selection()[0]))
+            if branch_table.selection() else None,
+        lambda: delete_selected(branch_table, delete_branch)
+    )
+    load_data(branch_table, read_branches)
+    notebook.add(branch_frame, text="สาขา")
+
+    # Project Tab
+    project_frame, project_table = create_table_frame(root, 'ตารางโปรเจกต์')
+    project_table['columns'] = ("รหัสโปรเจกต์", "ชื่อโปรเจกต์", "รหัสสาขา")
+    for col in project_table['columns']:
+        project_table.heading(col, text=col)
+        project_table.column(col, anchor='center')
+    build_crud_buttons(
+        project_frame,
+        lambda: open_modal(project_table, "โปรเจกต์", ["รหัสโปรเจกต์", "ชื่อโปรเจกต์", "รหัสสาขา"], [str, str, str],
+                           read_project_by_id, update_project, create_project, 
+                           lambda table: load_data(table, read_projects)),
+        lambda: open_modal(project_table, "โปรเจกต์", ["รหัสโปรเจกต์", "ชื่อโปรเจกต์", "รหัสสาขา"], [str, str, str],
+                           read_project_by_id, update_project, create_project, 
+                           lambda table: load_data(table, read_projects), int(project_table.selection()[0]))
+            if project_table.selection() else None,
+        lambda: delete_selected(project_table, delete_project)
+    )
+    load_data(project_table, read_projects)
+    notebook.add(project_frame, text="โปรเจกต์")
+
     # Student Tab
-    student_frame, student_table = create_table_frame(root, 'ตารางรายชื่อนักศึกษา')
-    student_table['columns'] = ("รหัสนักศึกษา", "ชื่อ", "สาขา")
+    student_frame, student_table = create_table_frame(root, 'ตารางนักศึกษา')
+    student_table['columns'] = ("รหัสนักศึกษา", "ชื่อ", "รหัสสาขา", "รหัสโปรเจกต์")
     for col in student_table['columns']:
         student_table.heading(col, text=col)
         student_table.column(col, anchor='center')
-
     build_crud_buttons(
         student_frame,
-        lambda: open_student_modal(student_table),
-        lambda: open_student_modal(student_table, int(student_table.selection()[0])) if student_table.selection() else None,
+        lambda: open_modal(student_table, "นักศึกษา", ["รหัสนักศึกษา", "ชื่อ", "รหัสสาขา", "รหัสโปรเจกต์"], [int, str, str, str],
+                           read_student_by_id, update_student, create_student, load_data),
+        lambda: open_modal(student_table, "นักศึกษา", ["รหัสนักศึกษา", "ชื่อ", "รหัสสาขา", "รหัสโปรเจกต์"], [int, str, str, str],
+                           read_student_by_id, update_student, create_student, load_data, int(student_table.selection()[0]))
+            if student_table.selection() else None,
         lambda: delete_selected(student_table, delete_student)
     )
-    load_students(student_table)
+    load_data(student_table, read_students)
     notebook.add(student_frame, text="นักศึกษา")
 
-    # Course Tab
-    course_frame, course_table = create_table_frame(root, 'ตารางรายวิชา')
-    course_table['columns'] = ("รหัสวิชา", "ชื่อวิชา", "อาจารย์ผู้สอน", "หมายเหตุ")
-    for col in course_table['columns']:
-        course_table.heading(col, text=col)
-        course_table.column(col, anchor='center')
-    build_crud_buttons(
-        course_frame,
-        lambda: open_course_modal(course_table),
-        lambda: open_course_modal(course_table, int(course_table.selection()[0])) if course_table.selection() else None,
-        lambda: delete_selected(course_table, delete_course)
-    )
-    load_courses(course_table)
-    notebook.add(course_frame, text="วิชา")
-
-    # Add double-click binding to course table
-    course_table.bind('<Double-1>', lambda event: open_grade_window(event, course_table))
-
-    # Grade Tab (placeholder)
-    grade_frame = tk.Frame(root)
-    tk.Label(grade_frame, text="ตารางเกรด", font=('Angsana New', 30, 'bold')).pack(pady=10)
     root.mainloop()
-
-def open_grade_window(event, course_table):
-    #if already open toplevel window
-    if any(isinstance(w, tk.Toplevel) and w.winfo_name() == "grade_modal" for w in course_table.winfo_children()):
-        return
-
-    selected_item = course_table.selection()
-    if not selected_item:
-        return
-    course = read_course_by_id(selected_item[0])
-
-    grade_modal = tk.Toplevel()
-    grade_modal.title(f"ตารางคะแนนสำหรับวิชา: {course[1]} {course[2]}")
-    grade_modal.geometry("800x600")  # Increased size for table
-    grade_modal.grab_set()
-
-    # Display course header info (assuming course order: course_id, course_name, teacher, description)
-    header_frame = tk.Frame(grade_modal)
-    header_frame.pack(fill='x', padx=10, pady=10)
-
-    tk.Label(header_frame, text=f"รหัสวิชา: {course[1]}", font=("Arial", 12, "bold")).pack(anchor='w')
-    add_student_button = tk.Button(header_frame, text="เพิ่มนักศึกษา", command=lambda: add_student_to_class_modal(course_table), width=18, height=2)
-    add_student_button.pack(side='right', padx=10)
-    tk.Label(header_frame, text=f"ชื่อวิชา: {course[2]}", font=("Arial", 12)).pack(anchor='w')
-    tk.Label(header_frame, text=f"ผู้สอน: {course[3]}", font=("Arial", 12)).pack(anchor='w')
-    tk.Label(header_frame, text=f"รายละเอียด: {course[4]}", font=("Arial", 12), wraplength=780, justify="left").pack(anchor='w')
-
-    # Add a Treeview for grades directly in the modal
-    grade_table = ttk.Treeview(grade_modal, show='headings')
-    grade_table.pack(expand=True, fill='both', padx=10, pady=10)
-
-    # Define columns for the grade table
-    grade_table['columns'] = ("ข้อมูลนักศึกษา", "Assessment", "Grade")
-    for col in grade_table['columns']:
-        grade_table.heading(col, text=col)
-        grade_table.column(col, anchor="center")
-
-    # Load grade data
-    student_rows = read_grades_for_course(course[0])
-    print(student_rows)
-    for row in student_rows:
-        student_info = f"{row[0]} - {row[1]}"
-        grade_table.insert('', tk.END, values=(student_info, row[2], row[3]))
-
-def add_student_to_class_modal(course_table):
-    selected_course = course_table.selection()
-    print('Selected Course:', {selected_course})  # Debugging print statement to check the selected_course value
-    if not selected_course:
-        messagebox.showwarning("Warning", "Please select a course first")
-        return
-    
-    course_id = int(selected_course[0])
-    modal = tk.Toplevel()
-    modal.title("เพิ่มนักศึกษาเข้ารายวิชา")
-    modal.geometry("500x400")
-    modal.grab_set()
-
-    # Get all students and filter out those already in the course
-    all_students = read_students()
-    enrolled_students = find_enrolled_students(course_id)
-    enrolled_ids = {row[0] for row in enrolled_students}
-    available_students = [student for student in all_students if student[0] not in enrolled_ids]
-
-    if not available_students:
-        tk.Label(modal, text="No students available to add").pack(pady=20)
-        return
-    # Create listbox with scrollbar
-    list_frame = tk.Frame(modal)
-    list_frame.pack(fill='both', expand=True, padx=10, pady=10)
-    
-    scrollbar = tk.Scrollbar(list_frame)
-    scrollbar.pack(side='right', fill='y')
-
-    student_list = tk.Listbox(list_frame, selectmode='multiple', 
-                             yscrollcommand=scrollbar.set)
-    student_list.pack(fill='both', expand=True)
-    
-    scrollbar.config(command=student_list.yview)
-
-    # Populate listbox
-    for student in available_students:
-        student_list.insert('end', f"{student[1]} ({student[2]}) - {student[3]}")
-
-    def on_add():
-        selected_indices = student_list.curselection()
-        if not selected_indices:
-            messagebox.showwarning("Warning", "Please select at least one student")
-            return
-        
-        # Get the actual student IDs from the selected indices
-        selected_students = [available_students[i][0] for i in selected_indices]
-        
-        # TODO: Add function to models.py to handle adding students to course
-        for student_id in selected_students:
-            add_student_to_course(student_id, course_id)
-        read_grades_for_course(course_id)
-        messagebox.showinfo("Success", "Students added to course")
-        modal.destroy()
-
-    button_frame = tk.Frame(modal)
-    button_frame.pack(pady=10)
-    
-    tk.Button(button_frame, text="Add Selected", command=on_add).pack(side='left', padx=5)
-    tk.Button(button_frame, text="Cancel", command=modal.destroy).pack(side='left', padx=5)
