@@ -81,11 +81,24 @@ def build_crud_buttons(frame, add_fn, edit_fn, delete_fn):
 def start_gui():
     root = tk.Tk()
     root.title("Class Manager")
-    notebook = ttk.Notebook(root)
-    notebook.pack(fill='both', expand=True)
 
-    # Branch Tab
-    branch_frame, branch_table = create_table_frame(root, 'ตารางสาขา')
+    # Main notebook
+    main_notebook = ttk.Notebook(root)
+    main_notebook.pack(fill='both', expand=True)
+
+    # ------------------- Search Tab (Default) -------------------
+    search_frame = tk.Frame(main_notebook)
+    # You can place search widgets here (currently empty)
+    ttk.Label(search_frame, text="หน้าค้นหาข้อมูลโครงงาน", font=("TH Sarabun New", 16)).pack(pady=20)
+    main_notebook.add(search_frame, text="ค้นหา")
+
+    # ------------------- Management Tab -------------------
+    management_frame = tk.Frame(main_notebook)
+    management_notebook = ttk.Notebook(management_frame)
+    management_notebook.pack(fill='both', expand=True)
+
+    # ---------- Branch Tab ----------
+    branch_frame, branch_table = create_table_frame(management_notebook, 'ตารางสาขา')
     branch_table['columns'] = ("รหัสสาขา", "ชื่อสาขา", "หมายเหตุ")
     for col in branch_table['columns']:
         branch_table.heading(col, text=col)
@@ -102,10 +115,10 @@ def start_gui():
         lambda: delete_selected(branch_table, delete_branch)
     )
     load_data(branch_table, read_branches)
-    notebook.add(branch_frame, text="สาขา")
+    management_notebook.add(branch_frame, text="สาขา")
 
-    # Project Tab
-    project_frame, project_table = create_table_frame(root, 'ตารางโปรเจกต์')
+    # ---------- Project Tab ----------
+    project_frame, project_table = create_table_frame(management_notebook, 'ตารางโปรเจกต์')
     project_table['columns'] = ("รหัสโปรเจกต์", "ชื่อโปรเจกต์", "รหัสสาขา")
     for col in project_table['columns']:
         project_table.heading(col, text=col)
@@ -122,10 +135,10 @@ def start_gui():
         lambda: delete_selected(project_table, delete_project)
     )
     load_data(project_table, read_projects)
-    notebook.add(project_frame, text="โปรเจกต์")
+    management_notebook.add(project_frame, text="โปรเจกต์")
 
-    # Student Tab
-    student_frame, student_table = create_table_frame(root, 'ตารางนักศึกษา')
+    # ---------- Student Tab ----------
+    student_frame, student_table = create_table_frame(management_notebook, 'ตารางนักศึกษา')
     student_table['columns'] = ("รหัสนักศึกษา", "ชื่อ", "รหัสสาขา", "รหัสโปรเจกต์")
     for col in student_table['columns']:
         student_table.heading(col, text=col)
@@ -140,6 +153,11 @@ def start_gui():
         lambda: delete_selected(student_table, delete_student)
     )
     load_data(student_table, read_students)
-    notebook.add(student_frame, text="นักศึกษา")
+    management_notebook.add(student_frame, text="นักศึกษา")
+
+    main_notebook.add(management_frame, text="การจัดการ")
+
+    # Set Search as the default tab (index 0)
+    main_notebook.select(0)
 
     root.mainloop()
