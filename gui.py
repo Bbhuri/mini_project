@@ -64,11 +64,18 @@ def open_modal(table, entity_name, field_names, entry_getters, reader_by_id, upd
         if data:
             for i, entry in enumerate(entries):
                 value = data[i + 1]  # Skip ID
+
                 if i == branch_dropdown_index:
-                    # Reverse lookup: find branch name from ID
                     name = next((n for n, bid in branch_id_map.items() if bid == value), "")
-                    entry.set(name)
+                    entry.set(value)
+                elif i == student_dropdown_index:
+                    student_names = value.split(", ")  # value is a comma-separated string of names
+                    all_names = entry.get(0, tk.END)
+                    for idx, name in enumerate(all_names):
+                            if name in student_names:
+                                entry.selection_set(idx)
                 else:
+                    entry.delete(0, tk.END)
                     entry.insert(0, value)
         else:
             messagebox.showerror("Error", f"{entity_name} ID {entity_id} not found")
@@ -145,11 +152,23 @@ def start_gui():
     # You can place search widgets here (currently empty)
     ttk.Label(search_frame, text="หน้าค้นหาข้อมูลโครงงาน", font=("TH Sarabun New", 16)).pack(pady=20)
     main_notebook.add(search_frame, text="ค้นหา")
+    #table 
+    table_frame = tk.Frame(search_frame)
+    table_frame.pack(pady=10)
+    table = ttk.Treeview(table_frame, show='headings')
+    table.pack(expand=True, fill='both', padx=10, pady=10)
+    table['columns'] = ("รหัสโครงงาน", "ชื่อโครงงาน", "สาขา","ผู้จัดทำ","หมายเหตุ")
+    for col in table['columns']:
+        table.heading(col, text=col)
+        table.column(col, anchor='center')
+    load_data(table, read_projects)
 
     # ------------------- Management Tab -------------------
     management_frame = tk.Frame(main_notebook)
     management_notebook = ttk.Notebook(management_frame)
     management_notebook.pack(fill='both', expand=True)
+
+
 
     # ---------- Branch Tab ----------
     branch_frame, branch_table = create_table_frame(management_notebook, 'ตารางสาขา')
@@ -200,10 +219,10 @@ def start_gui():
         project_table.column(col, anchor='center')
     build_crud_buttons(
         project_frame,
-        lambda: open_modal(project_table, "โครงงาน", ["รหัสโครงงาน", "ชื่อโครงงาน", "สาขา","ผู้จัดทำ","หมายเหตุ"], [str, str, str,list,str],
+        lambda: open_modal(project_table, "โครงงาน", ["รหัสโครงงาน", "ชื่อโครงงาน", "สาขา","ผู้จัดทำ","หมายเหตุ"], [str, str, str,str,str],
                            read_project_by_id, update_project, create_project, 
                            lambda table: load_data(table, read_projects)),
-        lambda: open_modal(project_table, "โครงงาน", ["รหัสโครงงาน", "ชื่อโครงงาน", "สาขา", "ผู้จัดทำ","หมายเหตุ"], [str, str,str,list,str],
+        lambda: open_modal(project_table, "โครงงาน", ["รหัสโครงงาน", "ชื่อโครงงาน", "สาขา", "ผู้จัดทำ","หมายเหตุ"], [str, str,str,str,str],
                            read_project_by_id, update_project, create_project, 
                            lambda table: load_data(table, read_projects), int(project_table.selection()[0]))
             if project_table.selection() else None,
