@@ -110,13 +110,26 @@ def delete_student(user_id):
     conn.close()
     return
 
-def create_project (project_id,project_name, branch_id,students,description):
+def create_project (project_id,project_name, branch_id,student_ids,description):
     conn = get_connection()
     cursor = conn.cursor()
     try:
-        command = "INSERT INTO projects (project_id,project_name,branch_id,students, description) VALUES (?,?,?,?,?)"
-        cursor.execute(command, (project_id,project_name, branch_id,students,description,))
+        print(project_id,project_name, branch_id,student_ids,description)
+        command = "INSERT INTO projects (project_id,project_name,branch_id, description) VALUES (?,?,?,?)"
+        cursor.execute(command, (project_id,project_name, branch_id,description,))
         conn.commit()
+
+        project_id = cursor.lastrowid
+
+        for student_id in student_ids:
+            try:
+                command = "INSERT INTO project_students (project_id, student_id) VALUES (?, ?)"
+                cursor.execute(command, (project_id, student_id))
+                conn.commit()
+            except sqlite3.IntegrityError:
+                conn.rollback()
+                continue
+
     except sqlite3.IntegrityError:
         raise ValueError("Project ID already exists")
     finally:
@@ -131,12 +144,17 @@ def read_projects():
             projects.project_id,
             projects.project_name,
             branches.branch_name,
+            GROUP_CONCAT(students.student_name, ', ') AS student_names,
             projects.description
         FROM projects
+        LEFT JOIN project_students ON projects.id = project_students.project_id
+        LEFT JOIN students ON project_students.student_id = students.id
         LEFT JOIN branches ON projects.branch_id = branches.id
+        GROUP BY projects.id, projects.project_id, projects.project_name, branches.branch_name, projects.description
     """)
     projects = cursor.fetchall()
     conn.close()
+    print(projects)
     return projects
 
 def update_project (project_id, project_name, description):

@@ -26,17 +26,18 @@ def open_modal(table, entity_name, field_names, entry_getters, reader_by_id, upd
 
     entries = []
     branch_dropdown_index = None
+    student_dropdown_index = None
     branch_id_map = {}
+    student_id_map = {}
+
 
     for i,field in  enumerate(field_names):
-        print(i,field,entity_name)
         handled = False
         
         if entity_name == "โครงงาน"  and field == "สาขา":
             branch_dropdown_index = i
             branches = read_branches()
             branch_id_map = {branch_name:id for id, _  , branch_name, *_ in branches}
-            print(branch_id_map)
             combo = ttk.Combobox(modal, values=list(branch_id_map.keys()), state="readonly")
             entries.append(combo)
             handled = True
@@ -48,7 +49,6 @@ def open_modal(table, entity_name, field_names, entry_getters, reader_by_id, upd
 
             listbox = tk.Listbox(modal, selectmode="multiple", exportselection=False, height=6)
 
-    # Insert student names into the Listbox
             for name in student_id_map.keys():
                 listbox.insert(tk.END, name)
 
@@ -88,6 +88,12 @@ def open_modal(table, entity_name, field_names, entry_getters, reader_by_id, upd
                     if not selected_name:
                         raise ValueError("กรุณาเลือกสาขา")
                     values.append(branch_id_map[selected_name])
+                elif i == student_dropdown_index:
+                    selected_indices = widget.curselection()
+                    if not selected_indices:
+                        raise ValueError("กรุณาเลือกผู้จัดทำ")
+                    selected_students = [student_id_map[widget.get(idx)] for idx in selected_indices]
+                    values.append(selected_students)
                 else:
                     values.append(getter(widget.get()))
             if not all(values):

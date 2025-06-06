@@ -27,9 +27,7 @@ def initializeProject_db():
         project_id TEXT NOT NULL,
         project_name TEXT NOT NULL,
         branch_id TEXT,
-        students_id LIST,
         description TEXT,
-        FOREIGN KEY(branch_id) REFERENCES branches(id),
         FOREIGN KEY(branch_id) REFERENCES branches(id)
         )""")
     conn.commit()
