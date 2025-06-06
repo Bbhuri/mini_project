@@ -35,19 +35,27 @@ def open_modal(table, entity_name, field_names, entry_getters, reader_by_id, upd
         if entity_name == "โครงงาน"  and field == "สาขา":
             branch_dropdown_index = i
             branches = read_branches()
-            branch_id_map = {name: bid for bid, name, *_ in branches}
+            branch_id_map = {branch_name:id for id, _  , branch_name, *_ in branches}
+            print(branch_id_map)
             combo = ttk.Combobox(modal, values=list(branch_id_map.keys()), state="readonly")
             entries.append(combo)
             handled = True
 
         if entity_name == "โครงงาน" and field == "ผู้จัดทำ":
-        #multiple select box for students
             student_dropdown_index = i
             students = read_students()
-            student_id_map = {name: sid for sid, name, *_ in students}
-            combo = ttk.Combobox(modal, values=list(student_id_map.keys()), state="readonly")
-            entries.append(combo)
+            student_id_map = {student_name: id for id, _, student_name, *_ in students}
+
+            listbox = tk.Listbox(modal, selectmode="multiple", exportselection=False, height=6)
+
+    # Insert student names into the Listbox
+            for name in student_id_map.keys():
+                listbox.insert(tk.END, name)
+
+            listbox.grid(row=i, column=1, sticky="ew")  # Adjust grid placement as needed
+            entries.append(listbox)
             handled = True
+
         if not handled:
             entries.append(tk.Entry(modal))
 
