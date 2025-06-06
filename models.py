@@ -52,12 +52,12 @@ def delete_branch(id):
     return
 
 
-def create_student(student_id, student_name, branch):
+def create_student(student_id, student_name):
     conn = get_connection()
     cursor = conn.cursor()
     try:
-        command = "INSERT INTO students(student_id, student_name, branch) VALUES (?, ?, ?)"
-        cursor.execute(command, (student_id, student_name, branch))
+        command = "INSERT INTO students(student_id, student_name) VALUES (?, ?)"
+        cursor.execute(command, (student_id, student_name, ))
         conn.commit()
     except sqlite3.IntegrityError:
         raise ValueError("Student ID already exists")
@@ -67,10 +67,19 @@ def create_student(student_id, student_name, branch):
 def read_students():
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM students")
-    users = cursor.fetchall()
+    cursor.execute("""
+        SELECT 
+            s.id,
+            s.student_id,
+            s.student_name,
+            p.project_name
+        FROM students s
+        LEFT JOIN projects p ON s.project_id = p.id
+    """)
+    students = cursor.fetchall()
+    print(students)
     conn.close()
-    return users
+    return students
 
 def read_student_by_id(user_id):
     conn = get_connection()
@@ -81,12 +90,12 @@ def read_student_by_id(user_id):
     conn.close()
     return user
 
-def update_student(id,student_id, student_name, branch):
+def update_student(id,student_id, student_name, ):
     conn = get_connection()
     cursor = conn.cursor()
     try:
-        command="UPDATE students SET student_id = ?, student_name = ?, branch = ? WHERE id = ?"
-        cursor.execute(command, (student_id,student_name, branch, id))
+        command="UPDATE students SET student_id = ?, student_name = ? WHERE id = ?"
+        cursor.execute(command, (student_id,student_name, id))
         conn.commit()
     except sqlite3.IntegrityError:
         raise ValueError("Student ID already exists")
@@ -102,16 +111,12 @@ def delete_student(user_id):
     conn.close()
     return
 
-
-
-
-
-def create_project (project_name, description):
+def create_project (project_id,project_name, branch_id,description):
     conn = get_connection()
     cursor = conn.cursor()
     try:
-        command = "INSERT INTO projects (project_name, description) VALUES (?,?)"
-        cursor.execute(command, (project_name, description))
+        command = "INSERT INTO projects (project_id,project_name,branch_id, description) VALUES (?,?,?,?)"
+        cursor.execute(command, (project_id,project_name, branch_id,description,))
         conn.commit()
     except sqlite3.IntegrityError:
         raise ValueError("Project ID already exists")
@@ -121,8 +126,18 @@ def create_project (project_name, description):
 def read_projects():
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("SELECT * FROM projects")
+    cursor.execute("""
+        SELECT 
+            projects.id,
+            projects.project_id,
+            projects.project_name,
+            branches.branch_name,
+            projects.description
+        FROM projects
+        LEFT JOIN branches ON projects.branch_id = branches.id
+    """)
     projects = cursor.fetchall()
+    print(projects)
     conn.close()
     return projects
 
@@ -145,7 +160,6 @@ def delete_project (project_id):
     conn.commit()
     conn.close()
     return
-
 def read_project_by_id(project_id):
     conn = get_connection()
     cursor = conn.cursor()

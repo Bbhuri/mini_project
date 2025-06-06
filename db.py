@@ -24,10 +24,11 @@ def initializeProject_db():
     cursor = conn.cursor()
     cursor.execute("""CREATE TABLE IF NOT EXISTS projects (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
+        project_id TEXT NOT NULL,
         project_name TEXT NOT NULL,
         branch_id TEXT,
         description TEXT,
-        FOREIGN KEY(branch_id) REFERENCES branches(branch_id)
+        FOREIGN KEY(branch_id) REFERENCES branches(id)
         )""")
     conn.commit()
     conn.close()
@@ -41,7 +42,7 @@ def initializeStudents_db():
         student_id TEXT NOT NULL UNIQUE,
         student_name TEXT NOT NULL, 
         project_id TEXT,
-        Foreign Key(project_id) REFERENCES projects(project_id)
+        Foreign Key(project_id) REFERENCES projects(id)
         )""")
     conn.commit()
     conn.close()

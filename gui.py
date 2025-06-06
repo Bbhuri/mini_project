@@ -24,13 +24,31 @@ def open_modal(table, entity_name, field_names, entry_getters, reader_by_id, upd
     modal.geometry("400x300")
     modal.grab_set()
 
-    entries = [tk.Entry(modal) for _ in field_names]
+    entries = []
+    branch_dropdown_index = None
+    branch_id_map = {}
+
+    for i,field in  enumerate(field_names):
+        if entity_name == "โครงงาน" and field == "รหัสสาขา" :
+            branch_dropdown_index = i
+            branches = read_branches()
+            branch_id_map = {name: bid for bid, name, *_ in branches}
+            combo = ttk.Combobox(modal, values=list(branch_id_map.keys()), state="readonly")
+            entries.append(combo)
+        else:
+            entries.append(tk.Entry(modal))
 
     if entity_id:
         data = reader_by_id(entity_id)
         if data:
-            for entry, value in zip(entries, data[1:len(field_names)+1]):
-                entry.insert(0, value)
+            for i, entry in enumerate(entries):
+                value = data[i + 1]  # Skip ID
+                if i == branch_dropdown_index:
+                    # Reverse lookup: find branch name from ID
+                    name = next((n for n, bid in branch_id_map.items() if bid == value), "")
+                    entry.set(name)
+                else:
+                    entry.insert(0, value)
         else:
             messagebox.showerror("Error", f"{entity_name} ID {entity_id} not found")
             modal.destroy()
@@ -42,9 +60,18 @@ def open_modal(table, entity_name, field_names, entry_getters, reader_by_id, upd
 
     def on_save():
         try:
-            values = [getter(entry.get()) for getter, entry in zip(entry_getters, entries)]
+            values = []
+            for i, (getter, widget) in enumerate(zip(entry_getters, entries)):
+                if i == branch_dropdown_index:
+                    selected_name = widget.get()
+                    if not selected_name:
+                        raise ValueError("กรุณาเลือกสาขา")
+                    values.append(branch_id_map[selected_name])
+                else:
+                    values.append(getter(widget.get()))
             if not all(values):
                 raise ValueError("กรุณากรอกข้อมูลให้ครบถ้วน")
+
             if entity_id:
                 updater(entity_id, *values)
             else:
@@ -117,43 +144,48 @@ def start_gui():
     load_data(branch_table, read_branches)
     management_notebook.add(branch_frame, text="สาขา")
 
+
+# ---------- Student Tab ----------
+    student_frame, student_table = create_table_frame(management_notebook, 'ตารางนักศึกษา')
+    student_table['columns'] = ("รหัสนักศึกษา", "ชื่อ", "โครงงาน")
+    for col in student_table['columns']:
+        student_table.heading(col, text=col)
+        student_table.column(col, anchor='center')
+    build_crud_buttons(
+        student_frame,
+        lambda: open_modal(student_table, "นักศึกษา", ["รหัสนักศึกษา", "ชื่อ"], [int, str ],
+                           read_student_by_id, update_student, create_student,
+                           lambda table: load_data(table, read_students)),
+        lambda: open_modal(student_table, "นักศึกษา", ["รหัสนักศึกษา", "ชื่อ"], [int, str],
+                           read_student_by_id, update_student, create_student,
+                           lambda table: load_data(table, read_students), int(student_table.selection()[0]))
+            if student_table.selection() else None,
+        lambda: delete_selected(student_table, delete_student)
+    )
+    load_data(student_table, read_students)
+    management_notebook.add(student_frame, text="นักศึกษา")
+
     # ---------- Project Tab ----------
-    project_frame, project_table = create_table_frame(management_notebook, 'ตารางโปรเจกต์')
-    project_table['columns'] = ("รหัสโปรเจกต์", "ชื่อโปรเจกต์", "รหัสสาขา")
+    project_frame, project_table = create_table_frame(management_notebook, 'ตารางโครงงาน')
+    project_table['columns'] = ("รหัสโครงงาน", "ชื่อโครงงาน", "สาขา","หมายเหตุ")
     for col in project_table['columns']:
         project_table.heading(col, text=col)
         project_table.column(col, anchor='center')
     build_crud_buttons(
         project_frame,
-        lambda: open_modal(project_table, "โปรเจกต์", ["รหัสโปรเจกต์", "ชื่อโปรเจกต์", "รหัสสาขา"], [str, str, str],
+        lambda: open_modal(project_table, "โครงงาน", ["รหัสโครงงาน", "ชื่อโครงงาน", "สาขา","หมายเหตุ"], [str, str, str,str],
                            read_project_by_id, update_project, create_project, 
                            lambda table: load_data(table, read_projects)),
-        lambda: open_modal(project_table, "โปรเจกต์", ["รหัสโปรเจกต์", "ชื่อโปรเจกต์", "รหัสสาขา"], [str, str, str],
+        lambda: open_modal(project_table, "โครงงาน", ["รหัสโครงงาน", "ชื่อโครงงาน", "สาขา","หมายเหตุ"], [str, str,str,str],
                            read_project_by_id, update_project, create_project, 
                            lambda table: load_data(table, read_projects), int(project_table.selection()[0]))
             if project_table.selection() else None,
         lambda: delete_selected(project_table, delete_project)
     )
     load_data(project_table, read_projects)
-    management_notebook.add(project_frame, text="โปรเจกต์")
+    management_notebook.add(project_frame, text="โครงงาน")
 
-    # ---------- Student Tab ----------
-    student_frame, student_table = create_table_frame(management_notebook, 'ตารางนักศึกษา')
-    student_table['columns'] = ("รหัสนักศึกษา", "ชื่อ", "รหัสสาขา", "รหัสโปรเจกต์")
-    for col in student_table['columns']:
-        student_table.heading(col, text=col)
-        student_table.column(col, anchor='center')
-    build_crud_buttons(
-        student_frame,
-        lambda: open_modal(student_table, "นักศึกษา", ["รหัสนักศึกษา", "ชื่อ", "รหัสสาขา", "รหัสโปรเจกต์"], [int, str, str, str],
-                           read_student_by_id, update_student, create_student, load_data),
-        lambda: open_modal(student_table, "นักศึกษา", ["รหัสนักศึกษา", "ชื่อ", "รหัสสาขา", "รหัสโปรเจกต์"], [int, str, str, str],
-                           read_student_by_id, update_student, create_student, load_data, int(student_table.selection()[0]))
-            if student_table.selection() else None,
-        lambda: delete_selected(student_table, delete_student)
-    )
-    load_data(student_table, read_students)
-    management_notebook.add(student_frame, text="นักศึกษา")
+    
 
     main_notebook.add(management_frame, text="การจัดการ")
 
