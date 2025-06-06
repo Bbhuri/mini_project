@@ -24,7 +24,7 @@ for i in range(5):
 projects = []
 for i in range(20):
     pid = rand_id("P", i+1)
-    branch = random.choice(branches)["branch_id"]
+    branch = random.choice(branches)["id"]
     projects.append({
         "project_id": pid,
         "project_name": f"Project_{i+1}",
@@ -37,7 +37,7 @@ students = []
 assigned_projects = random.sample(projects, k=10)  # Ensure unique project assignments
 for i in range(10):
     sid = rand_id("S", i+1)
-    project_id = assigned_projects[i]["project_id"]
+    project_id = assigned_projects[i]["id"]
     students.append({
         "student_id": sid,
         "student_name": random_name(),
@@ -45,7 +45,7 @@ for i in range(10):
     })
 
 # Generate project_students table (1:1 mapping here, same as students)
-project_students = [{"project_id": s["project_id"], "student_id": s["student_id"]} for s in students]
+project_students = [{"project_id": s["id"], "student_id": s["id"]} for s in students]
 
 # Write CSVs
 os.makedirs("generated_csv", exist_ok=True)
