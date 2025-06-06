@@ -1,4 +1,6 @@
 branch_id,branch_name,description
-CSE,Computer Science,CS Department
-ECE,Electronics,Electronics Department
-ME,Mechanical,Mechanical Engineering
+B001,Branch_1,Description for Branch 1
+B002,Branch_2,Description for Branch 2
+B003,Branch_3,Description for Branch 3
+B004,Branch_4,Description for Branch 4
+B005,Branch_5,Description for Branch 5
