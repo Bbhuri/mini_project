@@ -15,6 +15,7 @@ branches = []
 for i in range(5):
     bid = rand_id("B", i+1)
     branches.append({
+        "id": i+1,
         "branch_id": bid,
         "branch_name": f"Branch_{i+1}",
         "description": f"Description for Branch {i+1}"
@@ -26,6 +27,7 @@ for i in range(20):
     pid = rand_id("P", i+1)
     branch = random.choice(branches)["id"]
     projects.append({
+        "id": i+1,
         "project_id": pid,
         "project_name": f"Project_{i+1}",
         "branch_id": branch,
@@ -39,13 +41,17 @@ for i in range(10):
     sid = rand_id("S", i+1)
     project_id = assigned_projects[i]["id"]
     students.append({
+        "id": i+1,
         "student_id": sid,
         "student_name": random_name(),
         "project_id": project_id
     })
 
 # Generate project_students table (1:1 mapping here, same as students)
-project_students = [{"project_id": s["id"], "student_id": s["id"]} for s in students]
+project_students = [
+    {"project_id": s["project_id"], "student_id": s["id"]}
+    for s in students
+]
 
 # Write CSVs
 os.makedirs("generated_csv", exist_ok=True)
@@ -56,7 +62,7 @@ def write_csv(filename, data, fieldnames):
         writer.writeheader()
         writer.writerows(data)
 
-write_csv("branches.csv", branches, ["branch_id", "branch_name", "description"])
-write_csv("projects.csv", projects, ["project_id", "project_name", "branch_id", "description"])
-write_csv("students.csv", students, ["student_id", "student_name", "project_id"])
+write_csv("branches.csv", branches, ["id","branch_id", "branch_name", "description"])
+write_csv("projects.csv", projects, ["id","project_id", "project_name", "branch_id", "description"])
+write_csv("students.csv", students, ["id","student_id", "student_name", "project_id"])
 write_csv("project_students.csv", project_students, ["project_id", "student_id"])
