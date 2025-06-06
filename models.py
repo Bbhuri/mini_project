@@ -229,14 +229,15 @@ def read_project_by_id(project_id):
 def search_projects(search_term):
     conn = get_connection()
     cursor = conn.cursor()
-    
+
     command = """
         SELECT
             projects.id,
             projects.project_id,
             projects.project_name,
+            branches.branch_id,
             branches.branch_name,
-            GROUP_CONCAT(students.student_name, ', ') AS student_names,
+            GROUP_CONCAT(students.id || ': ' || students.student_name, ', ') AS student_names,
             projects.description
         FROM projects 
         LEFT JOIN project_students ON projects.id = project_students.project_id

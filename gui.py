@@ -160,13 +160,17 @@ def start_gui():
     search_button.pack()
 
     table_frame = tk.Frame(search_frame)
-    table_frame.pack(pady=10)
+    table_frame.pack(pady=10, fill='both', expand=True)
 
-    table = ttk.Treeview(table_frame, show='headings')
+    style = ttk.Style()
+    style.configure("Treeview", font=('TH Sarabun New', 12), rowheight=30)
+    style.configure("Treeview.Heading", font=('TH Sarabun New', 14, 'bold'))
+
+    table = ttk.Treeview(table_frame, show='headings', height=15)
     table['columns'] = ("รหัสโครงงาน", "ชื่อโครงงาน", "สาขา", "ผู้จัดทำ", "หมายเหตุ")
     for col in table['columns']:
         table.heading(col, text=col)
-        table.column(col, anchor='center')
+        table.column(col, anchor='center', width=150)
     table.pack(side='left', expand=True, fill='both', padx=10, pady=10)
 
     scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=table.yview)
@@ -175,19 +179,25 @@ def start_gui():
 
     def on_search():
         term = search_input.get()
-        if term.strip() == "":
-            results = read_projects()
-        else:
-            results = search_projects(term)
+        projects = search_projects(term)
         
-        table.delete(*table.get_children())  # Clear table
-        for project in results:
-            table.insert("", "end", values=(
-                project[1],  # project_id
-                project[2],  # project_name
-                project[3],  # branch_name
-                project[4],  # student_names
-                project[5],  # description
+        for row in table.get_children():
+            table.delete(row)
+
+        # Insert formatted data
+        for project in projects:
+            project_id = project[1]
+            project_name = project[2]
+            branch_full = f"{project[3]} {project[4]}"  # branch_id: branch_name
+            student_names = project[5]
+            description = project[6]
+            
+            table.insert('', 'end', values=(
+                project_id,
+                project_name,
+                branch_full,
+                student_names,
+                description
             ))
 
     search_button.config(command=on_search)
@@ -197,8 +207,7 @@ def start_gui():
     table.configure(yscrollcommand=scrollbar.set)
     scrollbar.pack(side='right', fill='y')
 
-    load_data(table, read_projects)
-    
+    on_search()
 
     # ------------------- Management Tab -------------------
     management_frame = tk.Frame(main_notebook)
