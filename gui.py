@@ -3,7 +3,7 @@ from tkinter import messagebox, ttk
 from models import (
     create_branch, read_branches, update_branch, delete_branch, read_branch_by_id,
     create_project, read_projects, update_project, delete_project, read_project_by_id,
-    create_student, read_students, update_student, delete_student, read_student_by_id
+    create_student, read_students, update_student, delete_student, read_student_by_id,search_projects
 )
 
 def create_table_frame(root, title_text):
@@ -139,6 +139,8 @@ def build_crud_buttons(frame, add_fn, edit_fn, delete_fn):
     tk.Button(btn_frame, text="แก้ไข", width=10, command=edit_fn).pack(side='left', padx=5)
     tk.Button(btn_frame, text="ลบ", width=10, command=delete_fn).pack(side='left', padx=5)
 
+
+
 def start_gui():
     root = tk.Tk()
     root.title("Class Manager")
@@ -149,19 +151,54 @@ def start_gui():
 
     # ------------------- Search Tab (Default) -------------------
     search_frame = tk.Frame(main_notebook)
-    # You can place search widgets here (currently empty)
     ttk.Label(search_frame, text="หน้าค้นหาข้อมูลโครงงาน", font=("TH Sarabun New", 16)).pack(pady=20)
     main_notebook.add(search_frame, text="ค้นหา")
-    #table 
+
+    search_input = tk.Entry(search_frame, font=("TH Sarabun New", 14))
+    search_input.pack(pady=10)
+    search_button = tk.Button(search_frame, text="ค้นหา", font=("TH Sarabun New", 14))
+    search_button.pack()
+
     table_frame = tk.Frame(search_frame)
     table_frame.pack(pady=10)
+
     table = ttk.Treeview(table_frame, show='headings')
-    table.pack(expand=True, fill='both', padx=10, pady=10)
-    table['columns'] = ("รหัสโครงงาน", "ชื่อโครงงาน", "สาขา","ผู้จัดทำ","หมายเหตุ")
+    table['columns'] = ("รหัสโครงงาน", "ชื่อโครงงาน", "สาขา", "ผู้จัดทำ", "หมายเหตุ")
     for col in table['columns']:
         table.heading(col, text=col)
         table.column(col, anchor='center')
+    table.pack(side='left', expand=True, fill='both', padx=10, pady=10)
+
+    scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=table.yview)
+    table.configure(yscrollcommand=scrollbar.set)
+    scrollbar.pack(side='right', fill='y')
+
+    def on_search():
+        term = search_input.get()
+        if term.strip() == "":
+            results = read_projects()
+        else:
+            results = search_projects(term)
+        
+        table.delete(*table.get_children())  # Clear table
+        for project in results:
+            table.insert("", "end", values=(
+                project[1],  # project_id
+                project[2],  # project_name
+                project[3],  # branch_name
+                project[4],  # student_names
+                project[5],  # description
+            ))
+
+    search_button.config(command=on_search)
+    search_input.bind("<Return>", lambda event: on_search())
+
+    scrollbar = ttk.Scrollbar(table_frame, orient="vertical", command=table.yview)
+    table.configure(yscrollcommand=scrollbar.set)
+    scrollbar.pack(side='right', fill='y')
+
     load_data(table, read_projects)
+    
 
     # ------------------- Management Tab -------------------
     management_frame = tk.Frame(main_notebook)

@@ -72,9 +72,11 @@ def read_students():
             s.id,
             s.student_id,
             s.student_name,
-            p.project_name
+            GROUP_CONCAT(p.project_name, ', ') AS project_names
         FROM students s
-        LEFT JOIN projects p ON s.project_id = p.id
+        LEFT JOIN project_students ps ON s.id = ps.student_id
+        LEFT JOIN projects p ON ps.project_id = p.id
+        GROUP BY s.id, s.student_id, s.student_name
     """)
     students = cursor.fetchall()
     conn.close()
@@ -253,7 +255,7 @@ def search_projects(search_term):
     like_term = f"%{search_term}%"
     cursor.execute(command, (like_term,) * 7)
     projects = cursor.fetchall()
-    
+    print(projects)
     conn.close()
     return projects
 
