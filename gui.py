@@ -29,13 +29,26 @@ def open_modal(table, entity_name, field_names, entry_getters, reader_by_id, upd
     branch_id_map = {}
 
     for i,field in  enumerate(field_names):
-        if entity_name == "โครงงาน" and field == "รหัสสาขา" :
+        print(i,field,entity_name)
+        handled = False
+        
+        if entity_name == "โครงงาน"  and field == "สาขา":
             branch_dropdown_index = i
             branches = read_branches()
             branch_id_map = {name: bid for bid, name, *_ in branches}
             combo = ttk.Combobox(modal, values=list(branch_id_map.keys()), state="readonly")
             entries.append(combo)
-        else:
+            handled = True
+
+        if entity_name == "โครงงาน" and field == "ผู้จัดทำ":
+        #multiple select box for students
+            student_dropdown_index = i
+            students = read_students()
+            student_id_map = {name: sid for sid, name, *_ in students}
+            combo = ttk.Combobox(modal, values=list(student_id_map.keys()), state="readonly")
+            entries.append(combo)
+            handled = True
+        if not handled:
             entries.append(tk.Entry(modal))
 
     if entity_id:
@@ -167,16 +180,16 @@ def start_gui():
 
     # ---------- Project Tab ----------
     project_frame, project_table = create_table_frame(management_notebook, 'ตารางโครงงาน')
-    project_table['columns'] = ("รหัสโครงงาน", "ชื่อโครงงาน", "สาขา","หมายเหตุ")
+    project_table['columns'] = ("รหัสโครงงาน", "ชื่อโครงงาน", "สาขา","ผู้จัดทำ","หมายเหตุ")
     for col in project_table['columns']:
         project_table.heading(col, text=col)
         project_table.column(col, anchor='center')
     build_crud_buttons(
         project_frame,
-        lambda: open_modal(project_table, "โครงงาน", ["รหัสโครงงาน", "ชื่อโครงงาน", "สาขา","หมายเหตุ"], [str, str, str,str],
+        lambda: open_modal(project_table, "โครงงาน", ["รหัสโครงงาน", "ชื่อโครงงาน", "สาขา","ผู้จัดทำ","หมายเหตุ"], [str, str, str,list,str],
                            read_project_by_id, update_project, create_project, 
                            lambda table: load_data(table, read_projects)),
-        lambda: open_modal(project_table, "โครงงาน", ["รหัสโครงงาน", "ชื่อโครงงาน", "สาขา","หมายเหตุ"], [str, str,str,str],
+        lambda: open_modal(project_table, "โครงงาน", ["รหัสโครงงาน", "ชื่อโครงงาน", "สาขา", "ผู้จัดทำ","หมายเหตุ"], [str, str,str,list,str],
                            read_project_by_id, update_project, create_project, 
                            lambda table: load_data(table, read_projects), int(project_table.selection()[0]))
             if project_table.selection() else None,

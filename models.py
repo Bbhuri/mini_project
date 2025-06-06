@@ -77,7 +77,6 @@ def read_students():
         LEFT JOIN projects p ON s.project_id = p.id
     """)
     students = cursor.fetchall()
-    print(students)
     conn.close()
     return students
 
@@ -111,12 +110,12 @@ def delete_student(user_id):
     conn.close()
     return
 
-def create_project (project_id,project_name, branch_id,description):
+def create_project (project_id,project_name, branch_id,students,description):
     conn = get_connection()
     cursor = conn.cursor()
     try:
-        command = "INSERT INTO projects (project_id,project_name,branch_id, description) VALUES (?,?,?,?)"
-        cursor.execute(command, (project_id,project_name, branch_id,description,))
+        command = "INSERT INTO projects (project_id,project_name,branch_id,students, description) VALUES (?,?,?,?,?)"
+        cursor.execute(command, (project_id,project_name, branch_id,students,description,))
         conn.commit()
     except sqlite3.IntegrityError:
         raise ValueError("Project ID already exists")
@@ -137,7 +136,6 @@ def read_projects():
         LEFT JOIN branches ON projects.branch_id = branches.id
     """)
     projects = cursor.fetchall()
-    print(projects)
     conn.close()
     return projects
 

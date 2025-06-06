@@ -27,7 +27,9 @@ def initializeProject_db():
         project_id TEXT NOT NULL,
         project_name TEXT NOT NULL,
         branch_id TEXT,
+        students_id LIST,
         description TEXT,
+        FOREIGN KEY(branch_id) REFERENCES branches(id),
         FOREIGN KEY(branch_id) REFERENCES branches(id)
         )""")
     conn.commit()
@@ -43,6 +45,20 @@ def initializeStudents_db():
         student_name TEXT NOT NULL, 
         project_id TEXT,
         Foreign Key(project_id) REFERENCES projects(id)
+        )""")
+    conn.commit()
+    conn.close()
+
+def initializeProjectsStudents_db():
+    os.makedirs("data", exist_ok=True)
+    conn = get_connection()
+    cursor = conn.cursor()
+    cursor.execute("""CREATE TABLE IF NOT EXISTS project_students (
+        project_id INTEGER,
+        student_id INTEGER,
+        PRIMARY KEY (project_id, student_id),
+        FOREIGN KEY(project_id) REFERENCES projects(id),
+        FOREIGN KEY(student_id) REFERENCES students(id)
         )""")
     conn.commit()
     conn.close()
