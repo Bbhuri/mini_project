@@ -248,8 +248,8 @@ def search_projects(search_term):
             OR students.student_name LIKE ?
             OR projects.description LIKE ?
             OR CAST(projects.project_id AS TEXT) LIKE ?
-            OR CAST(students.id AS TEXT) LIKE ?
-            OR CAST(branches.id AS TEXT) LIKE ?
+            OR CAST(students.student_id AS TEXT) LIKE ?
+            OR CAST(branches.branch_id AS TEXT) LIKE ?
         GROUP BY projects.id
     """
     
