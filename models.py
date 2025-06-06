@@ -114,7 +114,6 @@ def create_project (project_id,project_name, branch_id,student_ids,description):
     conn = get_connection()
     cursor = conn.cursor()
     try:
-        print(project_id,project_name, branch_id,student_ids,description)
         command = "INSERT INTO projects (project_id,project_name,branch_id, description) VALUES (?,?,?,?)"
         cursor.execute(command, (project_id,project_name, branch_id,description,))
         conn.commit()
@@ -154,16 +153,25 @@ def read_projects():
     """)
     projects = cursor.fetchall()
     conn.close()
-    print(projects)
     return projects
 
-def update_project (project_id, project_name, description):
+def update_project (project_id,project_name, branch_id,student_ids,description):
     conn = get_connection()
     cursor = conn.cursor()
     try:
-        command = "UPDATE projects SET project_name =?, description =? WHERE id =?"
-        cursor.execute(command, (project_name, description, project_id))
+        command = "UPDATE projects SET project_name =?,branch_id=? description =? WHERE id =?"
+        cursor.execute(command, (project_name, description,branch_id, project_id))
         conn.commit()
+
+        for student_id in student_ids:
+            try:
+                command = "UPDATE project_students SET student_id =? WHERE project_id =?"
+                cursor.execute(command, (student_id,project_id,))
+                conn.commit()
+            except sqlite3.IntegrityError:
+                conn.rollback()
+                continue
+
     except sqlite3.IntegrityError:
         raise ValueError("Project ID already exists")
     finally:
@@ -172,10 +180,17 @@ def update_project (project_id, project_name, description):
 def delete_project (project_id):
     conn = get_connection()
     cursor = conn.cursor()
-    cursor.execute("DELETE FROM projects WHERE id =?", (project_id,))
-    conn.commit()
-    conn.close()
+    try:
+        cursor.execute("DELETE FROM project_students WHERE project_id = ?", (project_id,))
+        cursor.execute("DELETE FROM projects WHERE id =?", (project_id,))
+        conn.commit()
+    except Exception as e:
+        conn.rollback()
+        raise e
+    finally:
+        conn.close()
     return
+
 def read_project_by_id(project_id):
     conn = get_connection()
     cursor = conn.cursor()

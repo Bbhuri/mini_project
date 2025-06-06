@@ -212,8 +212,6 @@ def start_gui():
     load_data(project_table, read_projects)
     management_notebook.add(project_frame, text="โครงงาน")
 
-    
-
     main_notebook.add(management_frame, text="การจัดการ")
 
     # Set Search as the default tab (index 0)
